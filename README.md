@@ -15,7 +15,6 @@ The purpose of this repository is to provide a collaborative space for the devel
 ## How AI Powers Silent Therapy
 Silent Therapy leverages the integration of advanced AI models to provide effective therapy services. Key features include:
 
-- Personalized Therapy Sessions: AI tailors therapy sessions to individual needs and preferences.
-- Emotion Detection: AI detects user emotions to provide more empathetic and relevant support.
+- Personalized Therapy Sessions: AI customizes therapy sessions to meet the unique needs and preferences of each individual.
 - Licensed Therapists Integration: Users can schedule sessions with licensed therapists, ensuring professional mental health support.
 - Continuous Learning: The AI chatbot continuously learns from interactions to improve its responses and therapeutic effectiveness.
