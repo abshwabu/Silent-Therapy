@@ -54,5 +54,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'username'
 
-# Update settings.py to use your custom user model
-# AUTH_USER_MODEL = 'your_app_name.User'
+class Patient(models.Model):
+    """Patient object."""
+    condition = models.CharField(max_length=255)
+    special_request = models.CharField(max_length=255)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
