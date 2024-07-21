@@ -2,3 +2,7 @@ silent_therapy/__pycache__/*
 backend/__pycache__/*
 */__pycache__/*
 
+api_key.py
+__pycache__/api_key.cpython-312.pyc
+*/migrations/*
+
