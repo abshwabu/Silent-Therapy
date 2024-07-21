@@ -41,7 +41,7 @@ class ChatBotViewSet(viewsets.ModelViewSet):
         text = request.data.get("text_input")
         print(text)
         if not text:
-            return Response({"error": "No text input provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No text input provided!"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             chat = model.start_chat()
