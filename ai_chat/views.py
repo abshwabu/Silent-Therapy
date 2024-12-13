@@ -61,3 +61,12 @@ class ChatBotViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logging.error(f"Error while generating response: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def perform_create(self, serializer):
+        # Ensure the user is set when creating a new instance
+        serializer.save(user=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context

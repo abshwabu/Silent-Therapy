@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/patient/', include('patient.urls')),
     path('api/ai-chat/', include('ai_chat.urls')),
     path('api/chat/', include('chat.urls')),
+    path('api/blog/', include('blog.urls')),
 ]
