@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from backend.models import Post, Category, Tag, Comment, Like
+from django.conf import settings
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,6 +36,16 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     dislikes_count = serializers.IntegerField(read_only=True)
     comments_count = serializers.IntegerField(read_only=True)
+    image = serializers.ImageField(max_length=None, use_url=True, required=False)
+
+    def to_representation(self, instance):
+        """Convert the image URL to a proper format."""
+        ret = super().to_representation(instance)
+        if ret['image']:
+            # Extract just the media path
+            image_path = ret['image'].split('/media/')[-1]
+            ret['image'] = f'/media/{image_path}'
+        return ret
 
     class Meta:
         model = Post
