@@ -2,61 +2,77 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
-from backend.models import Room, Message
-from .serializers import RoomSerializer, MessageSerializer
 from rest_framework.authentication import TokenAuthentication
+from django.shortcuts import get_object_or_404
+from backend.models import GroupChat, GroupMessage, PrivateChat, PrivateMessage
+from .serializers import (
+    GroupChatSerializer, GroupMessageSerializer,
+    PrivateChatSerializer, PrivateMessageSerializer
+)
 
-
-class RoomViewSet(viewsets.ModelViewSet):
-    queryset = Room.objects.all()  # Show all rooms
-    serializer_class = RoomSerializer
+class PrivateChatViewSet(viewsets.ModelViewSet):
+    serializer_class = PrivateChatSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
-        """Optimize query by using select_related and prefetch_related"""
-        return Room.objects.all()\
-            .select_related('host')\
-            .prefetch_related('current_users', 'messages')
+        return PrivateChat.objects.filter(participants=self.request.user)
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        room = serializer.save(host=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        chat = self.get_object()
+        if request.user not in chat.participants.all():
+            return Response(
+                {"error": "You are not a participant in this chat"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = PrivateMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(chat=chat, sender=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def retrieve(self, request, pk=None):
-        room = Room.objects.select_related('host').filter(pk=pk).first()
-        if not room:
-            return Response({"error": "Room with this ID does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = self.get_serializer(room)
-        return Response(serializer.data)
+class GroupChatViewSet(viewsets.ModelViewSet):
+    serializer_class = GroupChatSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get_queryset(self):
+        return GroupChat.objects.filter(members=self.request.user)
+
+    def perform_create(self, serializer):
+        chat = serializer.save(host=self.request.user)
+        chat.members.add(self.request.user)
 
     @action(detail=True, methods=['post'])
     def join(self, request, pk=None):
-        room = self.get_object()
-        room.current_users.add(request.user)
-        room.save()
-        serializer = self.get_serializer(room)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['get'])
-    def messages(self, request, pk=None):
-        room = self.get_object()
-        messages = Message.objects.filter(room=room)
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
+        chat = self.get_object()
+        chat.members.add(request.user)
+        return Response(self.get_serializer(chat).data)
 
     @action(detail=True, methods=['post'])
-    def create_message(self, request, pk=None):
-        room = self.get_object()
-        if room.current_users.filter(pk=request.user.pk).exists():
-            serializer = MessageSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(room=room, user=request.user)
+    def leave(self, request, pk=None):
+        chat = self.get_object()
+        if request.user == chat.host:
+            return Response(
+                {"error": "Host cannot leave the chat"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        chat.members.remove(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        chat = self.get_object()
+        if request.user not in chat.members.all():
+            return Response(
+                {"error": "You are not a member of this chat"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = GroupMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(chat=chat, sender=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(
-            {"error": "You are not allowed to send messages in this room"}, 
-            status=status.HTTP_403_FORBIDDEN
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -75,24 +75,79 @@ class ChatBot(models.Model):
     def __str__(self):
         return self.text_input
 
-
-class Room(models.Model):
-    name = models.CharField(max_length=255, null=False, blank=False, unique=True)
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rooms")
-    current_users = models.ManyToManyField(User, related_name="current_rooms", blank=True)
+class PrivateChat(models.Model):
+    """Model for one-to-one chats"""
+    participants = models.ManyToManyField(
+        User,
+        related_name='private_chats',
+        limit_choices_to=2  # Limit to 2 participants
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Room({self.name} {self.host})"
+        return f"Private Chat between {self.participants.all()}"
 
+class PrivateMessage(models.Model):
+    """Messages in private chats"""
+    chat = models.ForeignKey(
+        PrivateChat,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='private_messages'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
-class Message(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="messages")
-    text = models.TextField(max_length=500)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="messages")
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Private Message from {self.sender}"
+
+# Rename existing Room to GroupChat
+class GroupChat(models.Model):
+    """Model for group chats (previously Room)"""
+    name = models.CharField(max_length=255, unique=True)
+    host = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        related_name="hosted_group_chats"
+    )
+    members = models.ManyToManyField(
+        User,
+        related_name="group_chats",
+        blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Message({self.user} {self.room})"
+        return f"Group Chat: {self.name}"
+
+class GroupMessage(models.Model):
+    """Messages in group chats (previously Message)"""
+    chat = models.ForeignKey(
+        GroupChat,
+        on_delete=models.CASCADE,
+        related_name="messages"
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="group_messages"
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Group Message from {self.sender} in {self.chat.name}"
 
 class Category(models.Model):
     """Category for blog posts."""
