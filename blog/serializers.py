@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from backend.models import Post, Category, Tag
+from backend.models import Post, Category, Tag, Comment, Like
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,17 +13,37 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug']
         read_only_fields = ['id', 'slug']
 
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'post', 'author', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'author']
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ['id', 'post', 'value']
+        read_only_fields = ['id']
+
 class PostSerializer(serializers.ModelSerializer):
     author = serializers.PrimaryKeyRelatedField(read_only=True)
     categories = CategorySerializer(many=True, required=False)
     tags = TagSerializer(many=True, required=False)
+    comments = CommentSerializer(many=True, read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
+    dislikes_count = serializers.IntegerField(read_only=True)
+    comments_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'content', 'author', 
             'categories', 'tags', 'image',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at',
+            'comments', 'comments_count',
+            'likes_count', 'dislikes_count'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

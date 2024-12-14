@@ -154,3 +154,64 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def likes_count(self):
+        return self.likes.filter(value='like').count()
+
+    @property
+    def dislikes_count(self):
+        return self.likes.filter(value='dislike').count()
+
+    @property
+    def comments_count(self):
+        return self.comments.count()
+
+class Comment(models.Model):
+    """Comment model for blog posts."""
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Comment by {self.author} on {self.post}"
+
+class Like(models.Model):
+    """Like/Dislike model for posts."""
+    LIKE_CHOICES = (
+        ('like', 'Like'),
+        ('dislike', 'Dislike'),
+    )
+    
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    value = models.CharField(
+        max_length=7,
+        choices=LIKE_CHOICES,
+        default='like'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['post', 'user']  # One like/dislike per user per post
+
+    def __str__(self):
+        return f"{self.user} {self.value}d {self.post}"

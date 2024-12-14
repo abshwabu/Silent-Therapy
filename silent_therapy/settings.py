@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'user',
     'ai_chat',
     'chat',
+    'rest_framework_nested',
 ]
 
 MIDDLEWARE = [

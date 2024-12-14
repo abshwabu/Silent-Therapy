@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.authentication import TokenAuthentication
-from backend.models import Post, Category, Tag
-from .serializers import PostSerializer, CategorySerializer, TagSerializer
+from backend.models import Post, Category, Tag, Comment, Like
+from .serializers import PostSerializer, CategorySerializer, TagSerializer, CommentSerializer, LikeSerializer
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -32,3 +32,37 @@ class PostViewSet(viewsets.ModelViewSet):
         return Post.objects.all()\
             .select_related('author')\
             .prefetch_related('categories', 'tags') 
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return Comment.objects.filter(post_id=self.kwargs['post_pk'])
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            post_id=self.kwargs['post_pk']
+        )
+
+class LikeViewSet(viewsets.ModelViewSet):
+    serializer_class = LikeSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Like.objects.filter(post_id=self.kwargs['post_pk'])
+
+    def perform_create(self, serializer):
+        # Remove any existing like/dislike by this user on this post
+        Like.objects.filter(
+            post_id=self.kwargs['post_pk'],
+            user=self.request.user
+        ).delete()
+        
+        serializer.save(
+            user=self.request.user,
+            post_id=self.kwargs['post_pk']
+        )

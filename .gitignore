@@ -9,3 +9,4 @@ __pycache__/api_key.cpython-312.pyc
 .venv/*
 __pycache__/api_key.cpython-310.pyc
 db.sqlite3
+post_images/*
